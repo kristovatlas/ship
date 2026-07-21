@@ -27,12 +27,17 @@ def _repo_root() -> Path:
     """The enclosing git repo — NOT derived from __file__: in CI the gate
     runs as a trusted copy of the base branch's script from /tmp against
     the PR checkout as data."""
-    out = subprocess.run(
-        ["git", "rev-parse", "--show-toplevel"],
-        capture_output=True,
-        text=True,
-        check=True,
-    ).stdout.strip()
+    try:
+        out = subprocess.run(
+            ["git", "rev-parse", "--show-toplevel"],
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.strip()
+    except (subprocess.CalledProcessError, FileNotFoundError) as exc:
+        raise SystemExit(
+            f"review-gate: must be run from inside a git repository ({exc})"
+        ) from exc
     return Path(out)
 
 
@@ -89,10 +94,12 @@ def compute_diff_hash(base: str) -> str:
     themselves (so committing artifacts doesn't invalidate the hash they
     attest to).
 
-    Byte-stability across environments: every config knob that changes diff
-    bytes is pinned via -c, external diff drivers are disabled, index lines
-    use full object ids (core.abbrev varies with repo size), and the RAW
-    BYTES are hashed (no locale-dependent decode).
+    Byte-stability across environments: the config knobs known to change
+    diff bytes are pinned via flags and -c overrides, external diff/textconv
+    drivers are disabled, index lines use full object ids (core.abbrev
+    varies with repo size), and the RAW BYTES are hashed (no
+    locale-dependent decode). A knob this list misses fails closed — a
+    spurious STALE, never a wrongful pass.
     """
     if base.startswith("-"):  # option-injection guard
         raise SystemExit(f"review-gate: invalid --base ref {base!r}")
@@ -107,12 +114,22 @@ def compute_diff_hash(base: str) -> str:
             "diff.noprefix=false",
             "-c",
             "diff.mnemonicprefix=false",
+            "-c",
+            "diff.srcPrefix=a/",
+            "-c",
+            "diff.dstPrefix=b/",
+            "-c",
+            "diff.orderFile=",
+            "-c",
+            "diff.suppressBlankEmpty=false",
             "diff",
             "--no-color",
             "--no-ext-diff",
+            "--no-textconv",
             "--no-renames",
             "--full-index",
             "--unified=3",
+            "--inter-hunk-context=0",
             f"{base}...HEAD",
             "--",
             ".",
@@ -142,7 +159,9 @@ def check_artifact(path: Path, leg: str, leg_type: str, expected_hash: str) -> l
 
     if data["leg"] != leg:
         fails.append(f"{path.name}: leg is {data['leg']!r}, expected {leg!r}")
-    if data["reviewed_diff_sha256"] != expected_hash:
+    if not isinstance(data["reviewed_diff_sha256"], str):
+        fails.append(f"{path.name}: reviewed_diff_sha256 must be a string")
+    elif data["reviewed_diff_sha256"] != expected_hash:
         fails.append(
             f"{path.name}: STALE — reviewed_diff_sha256 does not match the "
             f"current code diff. The code changed after this review; re-run "
@@ -207,8 +226,11 @@ def check_artifact(path: Path, leg: str, leg_type: str, expected_hash: str) -> l
             fails.append(f"{tag}: disposition must be fixed|dismissed")
             continue
         needs_reason = f["disposition"] == "dismissed" or f["validated"] is False
-        if needs_reason and not str(f.get("reason", "")).strip():
-            fails.append(f"{tag}: dismissed/unvalidated findings require a reason")
+        reason = f.get("reason", "")
+        if needs_reason and (not isinstance(reason, str) or not reason.strip()):
+            fails.append(
+                f"{tag}: dismissed/unvalidated findings require a reason (non-empty string)"
+            )
         # The threshold rule.
         if (
             f["validated"] is True

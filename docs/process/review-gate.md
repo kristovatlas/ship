@@ -27,7 +27,8 @@ copy of the gate script** against the PR checkout as data (a PR editing
 `scripts/review_gate.py` cannot weaken its own enforcement), but a PR
 editing `ci.yml`'s gate *job* can still neuter it; that last step is
 caught only by review of `ci.yml` diffs — an inherent GitHub Actions
-property. The job runs with `contents: read` and no persisted credentials.
+property. Both CI jobs run with `contents: read` and
+`persist-credentials: false`.
 Because a job skipped via an edited `if:` condition **reports success to
 required-check evaluation** (GitHub-documented behavior), the ci.yml
 residual has no red-flag failure mode — therefore **any PR touching
@@ -118,11 +119,13 @@ which, because it edits the gate script, always escalates to the human.
    (security critical/high; review P1) may have any disposition other than
    `fixed`.
 4. **Staleness binding:** `reviewed_diff_sha256` must equal the sha256 of
-   the raw bytes of `git diff <merge-base>...HEAD -- . ':(exclude)docs/reviews'`
-   as produced by `compute_diff_hash` — which pins every byte-affecting knob
-   (`--no-ext-diff --no-renames --full-index --unified=3 --no-color` plus
-   `-c` overrides for prefix/algorithm/quotepath) so local and CI hashes
-   agree regardless of user git config. Any code change after
+   the raw bytes of `git diff origin/main...HEAD -- . ':(exclude)docs/reviews'`
+   as produced by `compute_diff_hash` — which pins the byte-affecting knobs
+   (`--no-ext-diff --no-textconv --no-renames --full-index --unified=3
+   --inter-hunk-context=0 --no-color` plus `-c` overrides for
+   prefix/algorithm/quotepath/orderFile) so local and CI hashes agree
+   regardless of user git config; an unpinned knob fails closed as a
+   spurious STALE, never a wrongful pass. Any code change after
    the reviews invalidates them — which mechanically enforces the
    re-review-after-fix rule: a "fixed" blocking finding can only pass the
    gate via a post-fix re-attestation whose hash matches the fixed code.

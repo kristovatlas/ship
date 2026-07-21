@@ -89,7 +89,7 @@ class TestCheckArtifact:
         fails = review_gate.check_artifact(p, "codex-review", "review", HASH)
         assert any("require a reason" in m for m in fails)
 
-    def test_dismissed_medium_with_reason_passes(self, tmp_path: Path) -> None:
+    def test_dismissed_p2_with_reason_passes(self, tmp_path: Path) -> None:
         f = finding(severity_validated="P2", disposition="dismissed", reason="cosmetic only")
         p = write(tmp_path, "codex-review", artifact("codex-review", [f]))
         assert review_gate.check_artifact(p, "codex-review", "review", HASH) == []
@@ -242,3 +242,20 @@ class TestMalformedArtifacts:
         p = write(tmp_path, "codex-review", a)
         fails = review_gate.check_artifact(p, "codex-review", "review", HASH)
         assert any("raw_output" in m for m in fails)
+
+    @pytest.mark.parametrize("bad_hash", [12345, None, True, {"a": 1}, ["x"]])
+    def test_non_string_diff_hash_diagnostic_not_traceback(
+        self, tmp_path: Path, bad_hash: Any
+    ) -> None:
+        a = artifact("codex-review")
+        a["reviewed_diff_sha256"] = bad_hash
+        p = write(tmp_path, "codex-review", a)
+        fails = review_gate.check_artifact(p, "codex-review", "review", HASH)
+        assert any("reviewed_diff_sha256 must be a string" in m for m in fails)
+
+    @pytest.mark.parametrize("bad_reason", [None, False, 0, ["because"]])
+    def test_non_string_reason_rejected(self, tmp_path: Path, bad_reason: Any) -> None:
+        f = finding(disposition="dismissed", reason=bad_reason)
+        p = write(tmp_path, "codex-review", artifact("codex-review", [f]))
+        fails = review_gate.check_artifact(p, "codex-review", "review", HASH)
+        assert any("require a reason" in m for m in fails)

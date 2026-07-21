@@ -9,6 +9,16 @@ The skill itself is [`SKILL.md`](SKILL.md). The design rationale — why
 each mechanism exists and what was rejected — is
 [`references/rationale.md`](references/rationale.md).
 
+## When to use it
+
+ship picks up where planning leaves off. Use it once you have already
+spec'd the project, done the design thinking, and established the
+project's engineering practices (CI, tests, branch rules, tracker) — and
+you are ready to start implementing. It is not an init or scaffolding
+tool: it assumes a project where the question is no longer *what to
+build or how to set things up*, but *how to get a batch of well-defined
+tasks built, reviewed, and merged with few human round-trips*.
+
 ## Install
 
 The repo root is the skill directory. Clone it into your skills folder:

@@ -103,7 +103,7 @@ def compute_diff_hash(base: str) -> str:
     """
     if base.startswith("-"):  # option-injection guard
         raise SystemExit(f"review-gate: invalid --base ref {base!r}")
-    diff = subprocess.run(
+    proc = subprocess.run(
         [
             "git",
             "-c",
@@ -119,7 +119,9 @@ def compute_diff_hash(base: str) -> str:
             "-c",
             "diff.dstPrefix=b/",
             "-c",
-            "diff.orderFile=",
+            # /dev/null, not empty: git treats an empty value as a filename
+            # to open and fatals on any non-empty diff.
+            "diff.orderFile=/dev/null",
             "-c",
             "diff.suppressBlankEmpty=false",
             "diff",
@@ -137,9 +139,13 @@ def compute_diff_hash(base: str) -> str:
         ],
         cwd=REPO_ROOT,
         capture_output=True,
-        check=True,
-    ).stdout
-    return hashlib.sha256(diff).hexdigest()
+    )
+    if proc.returncode != 0:
+        # Surface git's own message — a swallowed CalledProcessError is
+        # undiagnosable (and fail-closed is only useful when it says why).
+        stderr = proc.stderr.decode(errors="replace").strip()
+        raise SystemExit(f"review-gate: git diff failed: {stderr}")
+    return hashlib.sha256(proc.stdout).hexdigest()
 
 
 def check_artifact(path: Path, leg: str, leg_type: str, expected_hash: str) -> list[str]:

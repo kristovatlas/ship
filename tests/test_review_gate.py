@@ -3,6 +3,7 @@ like code (docs/process/review-gate.md). Loaded from scripts/ by path."""
 
 import importlib.util
 import json
+import subprocess
 from pathlib import Path
 from typing import Any
 
@@ -188,6 +189,34 @@ class TestRunGate:
     def test_hash_rejects_option_injection_base(self) -> None:
         with pytest.raises(SystemExit):
             review_gate.compute_diff_hash("--output=/tmp/pwn")
+
+    def test_hash_of_non_empty_diff(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        # Regression: the orderFile pin once made git fatal on any NON-empty
+        # diff, which HEAD...HEAD tests can't catch. Build a real two-commit
+        # repo and hash an actual diff.
+        def git(*args: str) -> None:
+            subprocess.run(
+                ["git", "-c", "user.email=t@t", "-c", "user.name=t", *args],
+                cwd=tmp_path,
+                capture_output=True,
+                check=True,
+            )
+
+        git("init", "-q")
+        (tmp_path / "f.txt").write_text("one\n")
+        git("add", "f.txt")
+        git("commit", "-qm", "c1")
+        (tmp_path / "f.txt").write_text("two\n")
+        git("add", "f.txt")
+        git("commit", "-qm", "c2")
+        monkeypatch.setattr(review_gate, "REPO_ROOT", tmp_path)
+        h1 = review_gate.compute_diff_hash("HEAD~1")
+        h2 = review_gate.compute_diff_hash("HEAD~1")
+        assert h1 == h2 and len(h1) == 64
+        # And a distinct diff hashes differently.
+        assert h1 != review_gate.compute_diff_hash("HEAD")
 
 
 class TestMalformedArtifacts:

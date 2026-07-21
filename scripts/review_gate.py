@@ -132,6 +132,9 @@ def compute_diff_hash(base: str) -> str:
             "--full-index",
             "--unified=3",
             "--inter-hunk-context=0",
+            # Never let PR-controlled .gitmodules (submodule.<n>.ignore=all)
+            # hide gitlink changes from the hash (codex security, PR #1).
+            "--ignore-submodules=none",
             f"{base}...HEAD",
             "--",
             ".",
@@ -153,7 +156,7 @@ def check_artifact(path: Path, leg: str, leg_type: str, expected_hash: str) -> l
     fails: list[str] = []
     try:
         data = json.loads(path.read_text())
-    except (OSError, json.JSONDecodeError) as exc:
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
         return [f"{path.name}: unreadable or invalid JSON ({exc})"]
     if not isinstance(data, dict):
         return [f"{path.name}: top-level JSON must be an object"]
@@ -203,6 +206,17 @@ def check_artifact(path: Path, leg: str, leg_type: str, expected_hash: str) -> l
         missing_f = REQUIRED_FINDING_FIELDS - set(f)
         if missing_f:
             fails.append(f"{tag}: missing fields {sorted(missing_f)}")
+            continue
+        bad_meta = [
+            fld
+            for fld in ("id", "summary")
+            if not isinstance(f[fld], str) or not f[fld].strip()
+        ]
+        if bad_meta:
+            fails.append(
+                f"{tag}: {', '.join(bad_meta)} must be non-empty strings — "
+                f"the artifact is a permanent audit record"
+            )
             continue
         if not isinstance(f["validated"], bool):
             fails.append(f"{tag}: validated must be true/false")

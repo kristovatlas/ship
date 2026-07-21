@@ -190,6 +190,49 @@ class TestRunGate:
         with pytest.raises(SystemExit):
             review_gate.compute_diff_hash("--output=/tmp/pwn")
 
+    def test_hash_sees_submodule_pointer_change_despite_ignore_all(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        # Security regression (codex, PR #1): .gitmodules with ignore=all
+        # must not hide a gitlink change from the staleness hash.
+        def git(cwd: Path, *args: str) -> None:
+            subprocess.run(
+                [
+                    "git",
+                    "-c",
+                    "user.email=t@t",
+                    "-c",
+                    "user.name=t",
+                    "-c",
+                    "protocol.file.allow=always",
+                    *args,
+                ],
+                cwd=cwd,
+                capture_output=True,
+                check=True,
+            )
+
+        sub = tmp_path / "sub"
+        sub.mkdir()
+        git(sub, "init", "-q")
+        git(sub, "commit", "-q", "--allow-empty", "-m", "one")
+        git(sub, "commit", "-q", "--allow-empty", "-m", "two")
+        host = tmp_path / "host"
+        host.mkdir()
+        git(host, "init", "-q")
+        git(host, "commit", "-q", "--allow-empty", "-m", "root")
+        git(host, "submodule", "add", "-q", "../sub", "subdir")
+        git(host, "config", "-f", ".gitmodules", "submodule.subdir.ignore", "all")
+        git(host, "add", "-A")
+        git(host, "commit", "-qm", "add submodule, ignore=all")
+        git(host / "subdir", "checkout", "-q", "HEAD~1")
+        git(host, "add", "subdir")
+        git(host, "commit", "-qm", "flip pointer only")
+        monkeypatch.setattr(review_gate, "REPO_ROOT", host)
+        assert review_gate.compute_diff_hash("HEAD~1") != review_gate.compute_diff_hash(
+            "HEAD"
+        )
+
     def test_hash_of_non_empty_diff(
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ) -> None:
@@ -264,6 +307,23 @@ class TestMalformedArtifacts:
         p = write(tmp_path, "codex-review", artifact("codex-review", [f]))
         fails = review_gate.check_artifact(p, "codex-review", "review", HASH)
         assert any("disposition" in m for m in fails)
+
+    def test_non_utf8_artifact_diagnostic_not_traceback(self, tmp_path: Path) -> None:
+        p = tmp_path / "codex-review.json"
+        p.write_bytes(b'{"leg": "\xff\xfe bad bytes"}')
+        fails = review_gate.check_artifact(p, "codex-review", "review", HASH)
+        assert any("unreadable or invalid JSON" in m for m in fails)
+
+    @pytest.mark.parametrize(
+        "field,value", [("id", None), ("id", ""), ("summary", {}), ("summary", "  ")]
+    )
+    def test_non_string_or_empty_id_summary_rejected(
+        self, tmp_path: Path, field: str, value: Any
+    ) -> None:
+        f = finding(**{field: value})
+        p = write(tmp_path, "codex-review", artifact("codex-review", [f]))
+        fails = review_gate.check_artifact(p, "codex-review", "review", HASH)
+        assert any("must be non-empty strings" in m for m in fails)
 
     def test_non_string_raw_output(self, tmp_path: Path) -> None:
         a = artifact("codex-review")

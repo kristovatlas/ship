@@ -1,6 +1,7 @@
 ---
 name: ship
 description: Deliver a milestone's worth of work as parallel, independently reviewed pull requests that merge autonomously when no human decision is needed, and escalate only genuine product, scope, security, data, and release decisions. Invoke when the user asks to ship a milestone or run a build wave across several independent tasks.
+version: 0.1.0
 ---
 
 # ship
@@ -82,6 +83,12 @@ When the wave lands or stalls, deliver one document to the human as a message (c
 ## Changing this protocol
 
 Read `references/rationale.md` before modifying this skill. It records why each mechanism exists and what was rejected; do not load it during normal execution.
+
+## Version and source
+
+This is ship v0.1.0. If you are reading a copied SKILL.md rather than a
+clone, the latest version (and the review-gate reference implementation,
+rationale, and changelog) lives at https://github.com/kristovatlas/ship.
 
 ## Guardrails
 

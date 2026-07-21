@@ -256,19 +256,26 @@ class TestRunGate:
         git(sub, "commit", "-q", "--allow-empty", "-m", "two")
         host = tmp_path / "host"
         host.mkdir()
-        git(host, "init", "-q")
+        git(host, "init", "-q", "-b", "main")
         git(host, "commit", "-q", "--allow-empty", "-m", "root")
         git(host, "submodule", "add", "-q", "../sub", "subdir")
         git(host, "config", "-f", ".gitmodules", "submodule.subdir.ignore", "all")
         git(host, "add", "-A")
         git(host, "commit", "-qm", "add submodule, ignore=all")
+        monkeypatch.setattr(review_gate, "REPO_ROOT", host)
+        # Two branches off the SAME base, so the bound merge-base id is
+        # identical and any hash difference can come only from the diff
+        # bytes — i.e. from the gitlink change ignore=all tries to hide.
+        git(host, "checkout", "-qb", "nochange")
+        git(host, "commit", "-q", "--allow-empty", "-m", "empty")
+        h_empty = review_gate.compute_diff_hash("main")
+        git(host, "checkout", "-q", "main")
+        git(host, "checkout", "-qb", "flip")
         git(host / "subdir", "checkout", "-q", "HEAD~1")
         git(host, "add", "subdir")
         git(host, "commit", "-qm", "flip pointer only")
-        monkeypatch.setattr(review_gate, "REPO_ROOT", host)
-        assert review_gate.compute_diff_hash("HEAD~1") != review_gate.compute_diff_hash(
-            "HEAD"
-        )
+        h_flip = review_gate.compute_diff_hash("main")
+        assert h_flip != h_empty
 
     def test_hash_of_non_empty_diff(
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
@@ -295,8 +302,14 @@ class TestRunGate:
         h1 = review_gate.compute_diff_hash("HEAD~1")
         h2 = review_gate.compute_diff_hash("HEAD~1")
         assert h1 == h2 and len(h1) == 64
-        # And a distinct diff hashes differently.
-        assert h1 != review_gate.compute_diff_hash("HEAD")
+        # Distinct diff CONTENT hashes differently at the SAME merge-base
+        # (an alt branch off the same parent — different base refs would
+        # differ via the bound merge-base id alone and prove nothing).
+        git("checkout", "-qb", "alt", "HEAD~1")
+        (tmp_path / "f.txt").write_text("three\n")
+        git("add", "f.txt")
+        git("commit", "-qm", "c2-alt")
+        assert h1 != review_gate.compute_diff_hash("HEAD~1")
 
 
 class TestMalformedArtifacts:

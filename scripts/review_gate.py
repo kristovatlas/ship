@@ -97,8 +97,9 @@ def compute_diff_hash(base: str) -> str:
     The merge-base id is bound in because diff BYTES alone survive a base
     advance that doesn't touch the PR's files — reviews would stay "current"
     across a semantic base change (codex security, PR #1). Binding it makes
-    every base advance restale the artifacts, which is the re-review
-    behavior the ship skill's Phase 4 documents.
+    every branch update onto an advanced base restale the artifacts (the
+    ruleset's require-up-to-date setting forces that update before merge),
+    which is the re-review behavior the ship skill's Phase 4 documents.
 
     Byte-stability across environments: the config knobs known to change
     diff bytes are pinned via flags and -c overrides, external diff/textconv
@@ -116,7 +117,10 @@ def compute_diff_hash(base: str) -> str:
     )
     if mb.returncode != 0:
         stderr = mb.stderr.decode(errors="replace").strip()
-        raise SystemExit(f"review-gate: git merge-base failed: {stderr}")
+        # merge-base exits 1 with empty stderr when histories are unrelated
+        # (e.g. a shallow fetch of the base ref).
+        detail = stderr or f"no common ancestor between {base} and HEAD"
+        raise SystemExit(f"review-gate: git merge-base failed: {detail}")
     merge_base = mb.stdout.decode().strip()
     proc = subprocess.run(
         [
@@ -139,6 +143,8 @@ def compute_diff_hash(base: str) -> str:
             "diff.orderFile=/dev/null",
             "-c",
             "diff.suppressBlankEmpty=false",
+            "-c",
+            "diff.indentHeuristic=true",
             "diff",
             "--no-color",
             "--no-ext-diff",

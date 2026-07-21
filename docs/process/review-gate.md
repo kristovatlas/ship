@@ -119,15 +119,21 @@ which, because it edits the gate script, always escalates to the human.
    (security critical/high; review P1) may have any disposition other than
    `fixed`.
 4. **Staleness binding:** `reviewed_diff_sha256` must equal the sha256 of
-   the raw bytes of `git diff origin/main...HEAD -- . ':(exclude)docs/reviews'`
-   as produced by `compute_diff_hash` — which pins the byte-affecting knobs
+   the merge-base commit id + `\0` + the raw bytes of
+   `git diff origin/main...HEAD -- . ':(exclude)docs/reviews'`
+   as produced by `compute_diff_hash`. The merge-base id is bound in
+   because diff bytes alone survive a base advance that touches none of
+   the PR's files; binding it makes **every** base advance restale the
+   artifacts and force re-review of the combined state. The diff
+   invocation pins the byte-affecting knobs
    (`--no-ext-diff --no-textconv --no-renames --full-index --unified=3
-   --inter-hunk-context=0 --no-color --ignore-submodules=none` plus `-c`
-   overrides for prefix/algorithm/quotepath/orderFile) so local and CI
-   hashes agree — `--ignore-submodules=none` also blocks a PR-controlled
-   `.gitmodules` `ignore=all` from hiding gitlink changes — 
-   regardless of user git config; an unpinned knob fails closed as a
-   spurious STALE, never a wrongful pass. Any code change after
+   --inter-hunk-context=0 --no-color --ignore-submodules=none
+   --submodule=short` plus `-c` overrides for prefix/algorithm/quotepath/
+   orderFile/suppressBlankEmpty) so local and CI hashes agree —
+   `--ignore-submodules=none` also blocks a PR-controlled `.gitmodules`
+   `ignore=all` from hiding gitlink changes — regardless of user git
+   config; an unpinned knob fails closed as a spurious STALE, never a
+   wrongful pass. Any code change after
    the reviews invalidates them — which mechanically enforces the
    re-review-after-fix rule: a "fixed" blocking finding can only pass the
    gate via a post-fix re-attestation whose hash matches the fixed code.

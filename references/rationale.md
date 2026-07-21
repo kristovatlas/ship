@@ -44,7 +44,7 @@ Merge queue: on from the start, or added when cadence justifies it.
 
 Record process versions here as the skill evolves.
 
-- **v0.1 (2026-07-21):** extracted into a dedicated repo
+- **v0.1.0 (2026-07-21):** extracted into a dedicated repo
   (kristovatlas/ship). Added the review-gate reference implementation
   (`scripts/review_gate.py`, `docs/process/review-gate.md`), ported from
   the somnus implementation with two changes: PRs merge straight to `main`

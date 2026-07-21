@@ -90,9 +90,15 @@ REQUIRED_FINDING_FIELDS = {
 
 
 def compute_diff_hash(base: str) -> str:
-    """sha256 of the merge-base diff, excluding the review artifacts
-    themselves (so committing artifacts doesn't invalidate the hash they
-    attest to).
+    """sha256 of the merge-base commit id + the merge-base diff, excluding
+    the review artifacts themselves (so committing artifacts doesn't
+    invalidate the hash they attest to).
+
+    The merge-base id is bound in because diff BYTES alone survive a base
+    advance that doesn't touch the PR's files — reviews would stay "current"
+    across a semantic base change (codex security, PR #1). Binding it makes
+    every base advance restale the artifacts, which is the re-review
+    behavior the ship skill's Phase 4 documents.
 
     Byte-stability across environments: the config knobs known to change
     diff bytes are pinned via flags and -c overrides, external diff/textconv
@@ -103,6 +109,15 @@ def compute_diff_hash(base: str) -> str:
     """
     if base.startswith("-"):  # option-injection guard
         raise SystemExit(f"review-gate: invalid --base ref {base!r}")
+    mb = subprocess.run(
+        ["git", "merge-base", base, "HEAD"],
+        cwd=REPO_ROOT,
+        capture_output=True,
+    )
+    if mb.returncode != 0:
+        stderr = mb.stderr.decode(errors="replace").strip()
+        raise SystemExit(f"review-gate: git merge-base failed: {stderr}")
+    merge_base = mb.stdout.decode().strip()
     proc = subprocess.run(
         [
             "git",
@@ -133,8 +148,11 @@ def compute_diff_hash(base: str) -> str:
             "--unified=3",
             "--inter-hunk-context=0",
             # Never let PR-controlled .gitmodules (submodule.<n>.ignore=all)
-            # hide gitlink changes from the hash (codex security, PR #1).
+            # hide gitlink changes from the hash (codex security, PR #1),
+            # and render gitlink changes in the byte-stable short form
+            # regardless of user diff.submodule config (Claude review, PR #1).
             "--ignore-submodules=none",
+            "--submodule=short",
             f"{base}...HEAD",
             "--",
             ".",
@@ -148,7 +166,7 @@ def compute_diff_hash(base: str) -> str:
         # undiagnosable (and fail-closed is only useful when it says why).
         stderr = proc.stderr.decode(errors="replace").strip()
         raise SystemExit(f"review-gate: git diff failed: {stderr}")
-    return hashlib.sha256(proc.stdout).hexdigest()
+    return hashlib.sha256(merge_base.encode() + b"\x00" + proc.stdout).hexdigest()
 
 
 def check_artifact(path: Path, leg: str, leg_type: str, expected_hash: str) -> list[str]:

@@ -190,6 +190,43 @@ class TestRunGate:
         with pytest.raises(SystemExit):
             review_gate.compute_diff_hash("--output=/tmp/pwn")
 
+    def test_hash_restales_when_merge_base_moves_with_identical_diff_bytes(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        # Security regression (codex, PR #1): a base advance that doesn't
+        # touch the PR's files leaves the diff BYTES identical, but the
+        # semantics may change — the hash must bind the merge-base id too.
+        def git(*args: str) -> bytes:
+            return subprocess.run(
+                ["git", "-c", "user.email=t@t", "-c", "user.name=t", *args],
+                cwd=tmp_path,
+                capture_output=True,
+                check=True,
+            ).stdout
+
+        git("init", "-q", "-b", "main")
+        (tmp_path / "f1.txt").write_text("base\n")
+        (tmp_path / "f2.txt").write_text("y\n")
+        git("add", "-A")
+        git("commit", "-qm", "c1")
+        git("checkout", "-qb", "feature")
+        (tmp_path / "f2.txt").write_text("w\n")
+        git("add", "f2.txt")
+        git("commit", "-qm", "feature change")
+        git("checkout", "-q", "main")
+        (tmp_path / "f1.txt").write_text("advanced\n")  # doesn't touch f2
+        git("add", "f1.txt")
+        git("commit", "-qm", "c2")
+        git("checkout", "-q", "feature")
+        monkeypatch.setattr(review_gate, "REPO_ROOT", tmp_path)
+        h_before = review_gate.compute_diff_hash("main")
+        d_before = git("diff", "main...HEAD")
+        git("rebase", "-q", "main")
+        h_after = review_gate.compute_diff_hash("main")
+        d_after = git("diff", "main...HEAD")
+        assert d_before == d_after  # the bypass precondition really holds
+        assert h_before != h_after  # ...and the hash restales anyway
+
     def test_hash_sees_submodule_pointer_change_despite_ignore_all(
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ) -> None:

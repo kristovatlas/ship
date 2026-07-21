@@ -232,8 +232,8 @@ class TestRunGate:
     ) -> None:
         # Security regression (codex, PR #1): .gitmodules with ignore=all
         # must not hide a gitlink change from the staleness hash.
-        def git(cwd: Path, *args: str) -> None:
-            subprocess.run(
+        def git(cwd: Path, *args: str) -> str:
+            r = subprocess.run(
                 [
                     "git",
                     "-c",
@@ -246,8 +246,10 @@ class TestRunGate:
                 ],
                 cwd=cwd,
                 capture_output=True,
-                check=True,
+                text=True,
             )
+            assert r.returncode == 0, f"git {args} failed: {r.stderr}"
+            return r.stdout
 
         sub = tmp_path / "sub"
         sub.mkdir()
@@ -271,8 +273,12 @@ class TestRunGate:
         h_empty = review_gate.compute_diff_hash("main")
         git(host, "checkout", "-q", "main")
         git(host, "checkout", "-qb", "flip")
-        git(host / "subdir", "checkout", "-q", "HEAD~1")
-        git(host, "add", "subdir")
+        # Stage the gitlink flip via plumbing: porcelain `git add <submodule>`
+        # semantics under ignore=all vary across git versions (staged nothing
+        # on CI's git, worked on 2.53), and no ignore config reaches
+        # update-index.
+        flip_sha = git(sub, "rev-parse", "HEAD~1").strip()
+        git(host, "update-index", "--cacheinfo", f"160000,{flip_sha},subdir")
         git(host, "commit", "-qm", "flip pointer only")
         h_flip = review_gate.compute_diff_hash("main")
         assert h_flip != h_empty

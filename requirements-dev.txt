@@ -1,0 +1,8 @@
+# Dev/CI-only dependencies. Policy (docs/process/engineering-standards.md,
+# landing in wave 2 lane B): exact pins, and every new pin must be >= 7 days
+# past its release at the time it is added (supply-chain cooldown).
+# Verified 2026-07-22:
+pytest==9.1.1        # released 2026-06-* (well past cooldown)
+pytest-cov==7.1.0    # released 2026-03-21
+ruff==0.15.21        # released 2026-07-09; 0.15.22 (07-16) skipped: inside cooldown
+mypy==2.3.0          # released 2026-07-13

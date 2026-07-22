@@ -35,9 +35,7 @@ def _repo_root() -> Path:
             check=True,
         ).stdout.strip()
     except (subprocess.CalledProcessError, FileNotFoundError) as exc:
-        raise SystemExit(
-            f"review-gate: must be run from inside a git repository ({exc})"
-        ) from exc
+        raise SystemExit(f"review-gate: must be run from inside a git repository ({exc})") from exc
     return Path(out)
 
 
@@ -232,9 +230,7 @@ def check_artifact(path: Path, leg: str, leg_type: str, expected_hash: str) -> l
             fails.append(f"{tag}: missing fields {sorted(missing_f)}")
             continue
         bad_meta = [
-            fld
-            for fld in ("id", "summary")
-            if not isinstance(f[fld], str) or not f[fld].strip()
+            fld for fld in ("id", "summary") if not isinstance(f[fld], str) or not f[fld].strip()
         ]
         if bad_meta:
             fails.append(

@@ -19,6 +19,9 @@ select = [
 [tool.mypy]
 python_version = "3.12"
 strict = true
+# Scope note: tests load review_gate via importlib, so review_gate.* calls
+# type as Any — strict mode fully covers scripts/ and the tests' own code,
+# not test-to-gate call signatures.
 files = ["scripts", "tests"]
 
 [tool.coverage.run]
@@ -28,7 +31,7 @@ source = ["scripts"]
 [tool.coverage.report]
 show_missing = true
 exclude_also = ["if __name__ == .__main__.:"]
-# Floor set just under the measured value after the wave-2 gap-closing
-# tests; patch coverage on new code is reviewed by the battery
-# (docs/adr/0005, lane B).
-fail_under = 95
+# Floor set just under the measured value (100% branch after the wave-2
+# gap-closing tests); patch coverage on new code is reviewed by the
+# battery (docs/adr/0005, lane B).
+fail_under = 99

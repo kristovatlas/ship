@@ -1,7 +1,7 @@
 ---
 name: ship
 description: Deliver a milestone's worth of work as parallel, independently reviewed pull requests that merge autonomously when no human decision is needed, and escalate only genuine product, scope, security, data, and release decisions. Invoke when the user asks to ship a milestone or run a build wave across several independent tasks.
-version: 0.1.0
+version: 0.2.0
 ---
 
 # ship
@@ -73,7 +73,7 @@ Escalation list, always wait for the human and merge only after the conversation
 
 ## Phase 5: Wave report
 
-When the wave lands or stalls, deliver one document to the human as a message (commit a copy alongside the plan file if the project keeps process records), in this order:
+When the wave lands or stalls, deliver one document to the human as a message. If the project keeps process records, also commit it alongside the plan file — in the wave's final PR, after the battery converges but before attestation, so the attested hash covers it (recorded with a standard post-review delta note; the report is prose about the process, so the never-leg-reviewed impurity is the same accepted residual as any delta note). Do not put reports in the hash-exempt artifacts path: that zone is for machine-checked attestations, and the report is a document humans act on. Order the report:
 
 1. Decisions needed: the genuine ones, batched, each with a recommendation, answerable inline.
 2. Conversations worth having: judgment calls you made autonomously that deserve a human sanity-check, and things worth watching in use. This is the human's primary read and stands in for reading diffs.
@@ -86,7 +86,7 @@ Read `references/rationale.md` before modifying this skill. It records why each 
 
 ## Version and source
 
-This is ship v0.1.0. If you are reading a copied SKILL.md rather than a
+This is ship v0.2.0. If you are reading a copied SKILL.md rather than a
 clone, the latest version (and the review-gate reference implementation,
 rationale, and changelog) lives at https://github.com/kristovatlas/ship.
 

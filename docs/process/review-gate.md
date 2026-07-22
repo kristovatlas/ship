@@ -142,6 +142,15 @@ which, because it edits the gate script, always escalates to the human.
    The `docs/reviews/` exclusion lets artifacts be committed without
    changing the hash they attest to.
 
+## Wave reports
+
+Wave reports are committed in the wave's final PR after battery
+convergence and before attestation (SKILL.md Phase 5) — inside the hash,
+delta-noted, never under the hash-exempt `docs/reviews/` path (that
+exemption is scoped to machine-checked attestation artifacts; putting
+human decision documents there would let a PR rewrite them without
+tripping staleness).
+
 ## Authoring workflow (orchestrator)
 
 1. Open the PR (reserves `<N>`); finish all fix rounds.

@@ -53,6 +53,15 @@ only) — and dogfoods it: every PR to this repo passes a 4-leg review
 battery (Claude and Codex, code review and security review each) through
 that gate before merging.
 
+## Engineering standards
+
+This repo eats its own cooking: every PR — docs included — passes the
+review battery through the gate. The standards and their enforcement are
+recorded in
+[`docs/process/engineering-standards.md`](docs/process/engineering-standards.md),
+decisions in [`docs/adr/`](docs/adr/), and the threat model in
+[`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md).
+
 ## License
 
 MIT — see [LICENSE](LICENSE).

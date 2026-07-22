@@ -44,6 +44,22 @@ Merge queue: on from the start, or added when cadence justifies it.
 
 Record process versions here as the skill evolves.
 
+Prehistory: before extraction into this repo the skill lived in another
+project and went through three major process iterations there (it was
+invoked as "ship-v4" at extraction time — the serial predecessor
+described in "What it replaced" was its v3). Repo-era numbering restarts
+at 0.1.0 (decided by Kristov, 2026-07-22); the old iterations are not
+individually reconstructed.
+
+- **v0.2.0 (2026-07-22):** Phase 5 now specifies where committed wave
+  reports live: in the wave's final PR, post-convergence pre-attestation,
+  delta-noted, never in the hash-exempt artifacts path (decided by
+  Kristov; options analysis in the wave-2 conversation). Engineering
+  standards recorded: MADR ADRs (docs/adr/), THREAT_MODEL.md with the
+  per-PR impact rule, coverage floor + patch-coverage policy, 7-day
+  dependency cooldown, CI enforcement (ruff/mypy/gitleaks/pip-audit/
+  lychee).
+
 - **v0.1.0 (2026-07-21):** extracted into a dedicated repo
   (kristovatlas/ship). Added the review-gate reference implementation
   (`scripts/review_gate.py`, `docs/process/review-gate.md`), ported from

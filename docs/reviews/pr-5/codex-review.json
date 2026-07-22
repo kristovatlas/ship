@@ -1,0 +1,45 @@
+{
+  "leg": "codex-review",
+  "model": "gpt-5.6-sol",
+  "reviewed_diff_sha256": "5714d6ff8730ff9ae6916c72c074ad9c414189bb1dd5ae8608b247b9904f09d1",
+  "reviewed_at": "2026-07-22",
+  "raw_output": "PR #5 correctness review (Codex CLI 0.145.0, gpt-5.6-sol, read-only sandbox, lane-B range at dd565f3).\n\nFindings: X1 (P2) engineering-standards.md presents security-hygiene/links/lint-type as enforcement despite the wave plan recording only review-gate and tests as required checks — the new jobs run but do not prevent merge. X2 (P2) documented tag-based release convention has no corresponding tag history (no local or origin tags, including for the recorded v0.1.0); consumers cannot use the advertised stability mechanism. X3 (P3) \"every PR passes the battery\" (README, ADR 0003) contradicts the documented intentionally-unattested probe PR #2; qualify as every merged PR. X4 (P3) ADR 0004 and 0005 omit Considered Options, below even MADR's minimal form.\n\nOverall: documentation mostly well cross-checked against gate, CI configuration, coverage settings, history, artifacts, and lane-B touch-set. Main correctness gap: several CI standards presented as binding before their checks are required; the release-tag claim is inoperative.\n\n--- Post-review delta note (orchestrator, attested at final head 83d6f55) ---\nThe four legs reviewed the lane-B range at dd565f3 (stacked on unmerged lane\nA). Single round, zero blocking findings. What changed after the legs ran:\n(1) fix batch 9cc8a41/1a1e99a closing every validated finding — docs\nrewritten from intended posture to shipped state (tags marked nonexistent\npending a release decision; advisory jobs labeled advisory; \"no secrets\"\ncorrected to the ephemeral read-only token; gate-job hermeticity narrowed to\nthe stdlib-only script + SHA-pinned first-party actions; Socket attributed to\nits GitHub App install; escalation rule labeled procedural), Phase 5\nequivalence claim replaced with an explicit wider-window concession + a\ncommitted-report-matches-delivered-message requirement, delta notes given a\ndefinition in the process doc, mutation-check precedent re-attributed to\nPR #1, Considered Options added to ADRs 0004/0005, wave-1 report blocking\ncount clarified; (2) rebase onto main after PR #4 merged (lane-B content\nunchanged; range diff now equals the main...HEAD diff this hash covers);\n(3) the wave-2 report committed per the Phase 5 option-C convention this PR\nitself introduces — the report matches the message delivered to Kristov.\nVerification on the final head: markdown-only diff (no code paths), all\nrelative links resolve, git diff --check clean, full test suite still 58\npassed with the 99 floor. Why no re-run: every change is finding-responsive\ndoc correction or the process records the convention prescribes; no code,\ngate, CI, or instruction-semantics change beyond the reviewed Phase 5 text\nwhose final wording implements the Claude security leg's own S1 remedy.",
+  "findings": [
+    {
+      "id": "X1",
+      "summary": "New quality jobs described as enforcement while not required checks",
+      "severity_claimed": "P2",
+      "validated": true,
+      "severity_validated": "P2",
+      "disposition": "fixed",
+      "reason": "Standards table labels all three advisory pending required-check promotion — escalated as wave-2 report decision 1."
+    },
+    {
+      "id": "X2",
+      "summary": "Tag convention documented with no tag history",
+      "severity_claimed": "P2",
+      "validated": true,
+      "severity_validated": "P2",
+      "disposition": "fixed",
+      "reason": "Same fix as Claude F2/S3: docs state no tags exist; first cut escalated (wave-2 report decision 2)."
+    },
+    {
+      "id": "X3",
+      "summary": "'Every PR passes the battery' contradicts the recorded probe PR #2",
+      "severity_claimed": "P3",
+      "validated": true,
+      "severity_validated": "P3",
+      "disposition": "fixed",
+      "reason": "Qualified to every merged PR in README and THREAT_MODEL; probes noted as hard-blocked by design."
+    },
+    {
+      "id": "X4",
+      "summary": "ADRs 0004/0005 omit Considered Options (below MADR minimal form)",
+      "severity_claimed": "P3",
+      "validated": true,
+      "severity_validated": "P3",
+      "disposition": "fixed",
+      "reason": "Considered Options sections added to both."
+    }
+  ]
+}

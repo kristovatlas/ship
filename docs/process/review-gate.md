@@ -142,6 +142,29 @@ which, because it edits the gate script, always escalates to the human.
    The `docs/reviews/` exclusion lets artifacts be committed without
    changing the hash they attest to.
 
+## Delta notes
+
+A delta note is the mechanism for small post-review changes: appended to
+each leg artifact's `raw_output` at attestation time, it must state (1)
+what changed after the leg ran (commits and substance), (2) what
+verification was performed on the delta (tests, mutation checks, doc
+re-reads), and (3) why the change did not warrant re-running the legs.
+Deltas are bounded to finding-responsive fixes, process records (wave
+plans/reports), and prose corrections — anything that changes code
+semantics or gate behavior re-runs the battery instead. The note lives
+inside hash-exempt artifacts, so its honesty is part of the
+artifact-genuineness residual; the delta content itself is inside the
+hash.
+
+## Wave reports
+
+Wave reports are committed in the wave's final PR after battery
+convergence and before attestation (SKILL.md Phase 5) — inside the hash,
+delta-noted, never under the hash-exempt `docs/reviews/` path (that
+exemption is scoped to machine-checked attestation artifacts; putting
+human decision documents there would let a PR rewrite them without
+tripping staleness).
+
 ## Authoring workflow (orchestrator)
 
 1. Open the PR (reserves `<N>`); finish all fix rounds.

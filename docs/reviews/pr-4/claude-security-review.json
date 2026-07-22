@@ -1,0 +1,54 @@
+{
+  "leg": "claude-security-review",
+  "model": "claude-fable-5",
+  "reviewed_diff_sha256": "d6316e7e5316bf1cf6d8745c9b3da693356587824ca9c45eb1142fcdc67b2357",
+  "reviewed_at": "2026-07-22",
+  "raw_output": "PR #4 security review (Claude, Fable 5, independent fresh-context pass, head 88aee5f).\n\nVerification performed by the leg: all four action SHA pins resolved exactly to claimed tags via gh api; all PyPI release dates match the cooldown comments; read the pinned actions' source (action.yml, entrypoint.sh, src/index.js, src/gitleaks.js) before writing findings. Gate trust boundary: review-gate job byte-identical; tests job strictly additive (--cov, requirements file); scripts/review_gate.py hunks pure reflow; all new jobs contents: read + persist-credentials: false; no new expression interpolation into shell (only secrets.GITHUB_TOKEN into step env); token-bearing gitleaks step is step-scoped so pip-audit never sees it.\n\nFindings: S1 (low) gitleaks-action executes a runtime-downloaded, checksum-unverified gitleaks binary (defaults to 8.24.3, version invisible in the diff) that the SHA pin does not cover — mutable release asset = code exec in the one step holding the read-only token; wave-doc mitigation sentence overstated. S2 (low) lychee-action likewise curls lychee v0.24.2 unverified at run time. S3 (low) version pins without hashes: transitives float past the cooldown policy; pip-audit pinned in ci.yml is never itself audited. S4 (info) lychee-action implicitly receives github.token while fetching PR-author-controlled URLs; downscoped read-only, no practical exfiltration identified; implicit pass-through invisible in workflow text. S5 (info) gitleaks-action's on-findings PR-comment POST needs pull-requests: write (absent) — 403s after the scan, job exits non-zero either way: fail-closed, correctly scoped. Operational note: org-account transfer would require GITLEAKS_LICENSE.\n\nOverall: no critical/high/medium. The PR does not weaken the gate; pins and cooldown claims verify; the real added residual is the one it partially mis-documented (scanner binaries and transitives outside the pins) — bounded to read-only secretless CI, dev-facing only, no path to skill consumers.\n\n--- Post-review delta note (orchestrator, attested at final head 7950a47) ---\nSingle-round battery on 88aee5f converged (zero blocking findings across all\nfour legs). The validated non-blocking findings were then fixed and committed\nas 7950a47: GITLEAKS_VERSION/lycheeVersion pinned in-diff, gitleaks range-scan\ncomment corrected, coverage floor 95->99 to match its rationale (measured\n100%), lychee implicit-token and mypy-scope notes added, pip-audit cooldown\ncomment, wave-plan prose matched to shipped mechanisms, threat-model impact\nrewritten to record the checksum-unverified scanner downloads and floating\ntransitives as accepted dev-scoped residuals (no path to skill consumers -\nenforcement runs through the stdlib-only gate job, ruleset, and human\nescalation on workflow changes). Local verification on the fixed head:\n58 tests pass, 100% branch coverage (floor 99 enforced), ruff check/format\nclean, mypy strict clean, workflow YAML parses, git diff --check clean.\nThe attested hash covers the fixed state. This PR touches\n.github/workflows/ci.yml and therefore escalates to Kristov for merge\nregardless of battery outcome. Second delta (ed4a9bf, hash updated): the touch-set gate caught decisions.txt (Kristov's local never-commit scratch file) swept into the fix-batch commit by git add -A; removed from tracking, staging is explicit-path from here on. Removal-only change, no reviewed content altered.",
+  "findings": [
+    {
+      "id": "S1",
+      "summary": "SHA pin covers gitleaks wrapper only; scanner binary downloaded at run time, checksum-unverified, version not in diff",
+      "severity_claimed": "low",
+      "validated": true,
+      "severity_validated": "low",
+      "disposition": "fixed",
+      "reason": "GITLEAKS_VERSION 8.24.3 pinned in-diff with residual comment; checksum residual accepted. Accepted dev-scoped residual, recorded in the wave plan's threat-model note and expanded in THREAT_MODEL.md (lane B): bounded to code execution in read-only, secretless CI jobs; no path to skill consumers (enforcement runs through the stdlib-only gate job, ruleset, and human escalation on workflow changes)."
+    },
+    {
+      "id": "S2",
+      "summary": "lychee binary likewise downloaded unverified at run time",
+      "severity_claimed": "low",
+      "validated": true,
+      "severity_validated": "low",
+      "disposition": "fixed",
+      "reason": "lycheeVersion v0.24.2 pinned in-diff with residual comment; checksum residual accepted. Accepted dev-scoped residual, recorded in the wave plan's threat-model note and expanded in THREAT_MODEL.md (lane B): bounded to code execution in read-only, secretless CI jobs; no path to skill consumers (enforcement runs through the stdlib-only gate job, ruleset, and human escalation on workflow changes)."
+    },
+    {
+      "id": "S3",
+      "summary": "Version pins without hashes: transitives float past the cooldown; pip-audit itself unaudited",
+      "severity_claimed": "low",
+      "validated": true,
+      "severity_validated": "low",
+      "disposition": "dismissed",
+      "reason": "Accepted this wave: hash-pinning is recorded future work (lane B standards/ADR); pip-audit pin carries a cooldown comment in ci.yml. Accepted dev-scoped residual, recorded in the wave plan's threat-model note and expanded in THREAT_MODEL.md (lane B): bounded to code execution in read-only, secretless CI jobs; no path to skill consumers (enforcement runs through the stdlib-only gate job, ruleset, and human escalation on workflow changes)."
+    },
+    {
+      "id": "S4",
+      "summary": "lychee-action implicitly receives read-only github.token while fetching PR-controlled URLs",
+      "severity_claimed": "info",
+      "validated": true,
+      "severity_validated": "info",
+      "disposition": "dismissed",
+      "reason": "Token kept deliberately (unauthenticated github.com checks rate-limit-flake; private-repo links need it); implicit default now documented in the workflow. No practical exfiltration path identified by either security leg."
+    },
+    {
+      "id": "S5",
+      "summary": "gitleaks on-findings comment POST lacks pull-requests: write; 403s but job still fails",
+      "severity_claimed": "info",
+      "validated": true,
+      "severity_validated": "info",
+      "disposition": "dismissed",
+      "reason": "Fail-closed by construction — the minimal permission set is the point; operational note (org transfer needs GITLEAKS_LICENSE) recorded in the wave report."
+    }
+  ]
+}

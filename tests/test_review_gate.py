@@ -4,6 +4,7 @@ like code (docs/process/review-gate.md). Loaded from scripts/ by path."""
 import importlib.util
 import json
 import subprocess
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -283,9 +284,7 @@ class TestRunGate:
         h_flip = review_gate.compute_diff_hash("main")
         assert h_flip != h_empty
 
-    def test_hash_of_non_empty_diff(
-        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-    ) -> None:
+    def test_hash_of_non_empty_diff(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
         # Regression: the orderFile pin once made git fatal on any NON-empty
         # diff, which HEAD...HEAD tests can't catch. Build a real two-commit
         # repo and hash an actual diff.
@@ -318,9 +317,172 @@ class TestRunGate:
         assert h1 != review_gate.compute_diff_hash("HEAD~1")
 
 
+class TestCli:
+    """main()/error paths via real subprocess runs (coverage-gap closure,
+    wave 2)."""
+
+    SCRIPT = str(Path(__file__).parents[1] / "scripts" / "review_gate.py")
+
+    def _make_repo(self, tmp_path: Path) -> None:
+        def git(*args: str) -> None:
+            subprocess.run(
+                ["git", "-c", "user.email=t@t", "-c", "user.name=t", *args],
+                cwd=tmp_path,
+                capture_output=True,
+                check=True,
+            )
+
+        git("init", "-q", "-b", "main")
+        (tmp_path / "f.txt").write_text("one\n")
+        git("add", "f.txt")
+        git("commit", "-qm", "c1")
+
+    def test_hash_only_prints_hash(self, tmp_path: Path) -> None:
+        self._make_repo(tmp_path)
+        r = subprocess.run(
+            [sys.executable, self.SCRIPT, "--hash-only", "--base", "HEAD"],
+            cwd=tmp_path,
+            capture_output=True,
+            text=True,
+        )
+        assert r.returncode == 0
+        assert len(r.stdout.strip()) == 64
+
+    def test_missing_pr_arg_errors(self, tmp_path: Path) -> None:
+        self._make_repo(tmp_path)
+        r = subprocess.run(
+            [sys.executable, self.SCRIPT],
+            cwd=tmp_path,
+            capture_output=True,
+            text=True,
+        )
+        assert r.returncode == 2
+        assert "--pr is required" in r.stderr
+
+    def test_gate_fails_for_missing_artifacts(self, tmp_path: Path) -> None:
+        self._make_repo(tmp_path)
+        r = subprocess.run(
+            [sys.executable, self.SCRIPT, "--pr", "7", "--base", "HEAD"],
+            cwd=tmp_path,
+            capture_output=True,
+            text=True,
+        )
+        assert r.returncode == 1
+        assert "review battery has not been recorded" in r.stdout
+
+    def test_outside_git_repo_clear_message(self, tmp_path: Path) -> None:
+        r = subprocess.run(
+            [sys.executable, self.SCRIPT, "--hash-only"],
+            cwd=tmp_path,  # plain directory, not a repo
+            capture_output=True,
+            text=True,
+        )
+        assert r.returncode != 0
+        assert "must be run from inside a git repository" in r.stderr
+
+    def test_unknown_base_ref_diagnostic(self, tmp_path: Path) -> None:
+        self._make_repo(tmp_path)
+        r = subprocess.run(
+            [sys.executable, self.SCRIPT, "--hash-only", "--base", "no-such-ref"],
+            cwd=tmp_path,
+            capture_output=True,
+            text=True,
+        )
+        assert r.returncode != 0
+        assert "git merge-base failed" in r.stderr
+
+
+class TestMainInProcess:
+    """Same paths as TestCli but in-process, so coverage sees them (the
+    subprocess tests prove real CLI behavior; these prove the lines)."""
+
+    def _repo(self, tmp_path: Path) -> Path:
+        def git(*args: str) -> None:
+            subprocess.run(
+                ["git", "-c", "user.email=t@t", "-c", "user.name=t", *args],
+                cwd=tmp_path,
+                capture_output=True,
+                check=True,
+            )
+
+        git("init", "-q", "-b", "main")
+        (tmp_path / "f.txt").write_text("one\n")
+        git("add", "f.txt")
+        git("commit", "-qm", "c1")
+        return tmp_path
+
+    def test_hash_only_exit_zero(
+        self, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], tmp_path: Path
+    ) -> None:
+        monkeypatch.setattr(review_gate, "REPO_ROOT", self._repo(tmp_path))
+        monkeypatch.setattr(sys, "argv", ["review_gate.py", "--hash-only", "--base", "HEAD"])
+        assert review_gate.main() == 0
+        assert len(capsys.readouterr().out.strip()) == 64
+
+    def test_pr_without_artifacts_exit_one(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        monkeypatch.setattr(review_gate, "REPO_ROOT", self._repo(tmp_path))
+        monkeypatch.setattr(review_gate, "REVIEWS_ROOT", tmp_path / "none")
+        monkeypatch.setattr(sys, "argv", ["review_gate.py", "--pr", "7", "--base", "HEAD"])
+        assert review_gate.main() == 1
+
+    def test_missing_pr_parser_error(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(sys, "argv", ["review_gate.py"])
+        with pytest.raises(SystemExit):
+            review_gate.main()
+
+    def test_repo_root_outside_git_repo(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        monkeypatch.chdir(tmp_path)
+        with pytest.raises(SystemExit, match="inside a git repository"):
+            review_gate._repo_root()
+
+    def test_merge_base_unknown_ref_diagnostic(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        monkeypatch.setattr(review_gate, "REPO_ROOT", self._repo(tmp_path))
+        with pytest.raises(SystemExit, match="git merge-base failed"):
+            review_gate.compute_diff_hash("no-such-ref")
+
+    def test_diff_failure_diagnostic(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+        monkeypatch.setattr(review_gate, "REPO_ROOT", self._repo(tmp_path))
+        real_run = subprocess.run
+
+        def fake_run(args: list[str], **kw: Any) -> Any:
+            if "diff" in args:
+                return subprocess.CompletedProcess(args, 128, stdout=b"", stderr=b"boom")
+            return real_run(args, **kw)
+
+        monkeypatch.setattr(review_gate.subprocess, "run", fake_run)
+        with pytest.raises(SystemExit, match="git diff failed: boom"):
+            review_gate.compute_diff_hash("HEAD")
+
+
 class TestMalformedArtifacts:
     """Malformed inputs must produce diagnostics, never tracebacks (and the
     gate must stay fail-closed either way)."""
+
+    def test_findings_not_a_list(self, tmp_path: Path) -> None:
+        a = artifact("codex-review")
+        a["findings"] = "not a list"
+        p = write(tmp_path, "codex-review", a)
+        fails = review_gate.check_artifact(p, "codex-review", "review", HASH)
+        assert any("findings must be a list" in m for m in fails)
+
+    def test_finding_missing_required_fields(self, tmp_path: Path) -> None:
+        f = finding()
+        del f["disposition"], f["severity_validated"]
+        p = write(tmp_path, "codex-review", artifact("codex-review", [f]))
+        fails = review_gate.check_artifact(p, "codex-review", "review", HASH)
+        assert any("missing fields" in m and "disposition" in m for m in fails)
+
+    def test_non_bool_validated(self, tmp_path: Path) -> None:
+        f = finding(validated="yes")
+        p = write(tmp_path, "codex-review", artifact("codex-review", [f]))
+        fails = review_gate.check_artifact(p, "codex-review", "review", HASH)
+        assert any("validated must be true/false" in m for m in fails)
 
     def test_non_dict_finding_entry(self, tmp_path: Path) -> None:
         a = artifact("codex-review", findings=[])

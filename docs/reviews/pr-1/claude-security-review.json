@@ -1,0 +1,63 @@
+{
+  "leg": "claude-security-review",
+  "model": "claude-fable-5",
+  "reviewed_diff_sha256": "0cd0ae9410f8759b83555bca7011801ffe6d3e96ea93539757e58b86a7c7ea45",
+  "reviewed_at": "2026-07-21",
+  "raw_output": "PR #1 security review, rounds 1/4 (Claude, Fable 5, independent fresh-context passes).\n\nROUND 4 (final, head ca27180), verbatim summary: S1 (info) merge-base binding is inert if the PR branch is never updated after a base advance; closure of that case rests on the admin require-up-to-date ruleset — correctly documented in the process doc, but the docstring overstated the standalone mechanism (fix suggested and applied in the attested head). S2 (info) pytest version-pinned but transitive deps unpinned (pluggy/iniconfig/packaging); runs in the hardened tests job (contents: read, persist-credentials: false, no secrets) — cannot reach the gate job. S3 (info) submodule regression test flaked once in seven full-suite runs, passed isolated and on re-runs; fails closed; watch item. Merge-base binding scrutiny CLEAN: argv-only subprocess, stderr surfaced, option-injection guard covers both invocations, ASCII-hex decode locale-safe, NUL delimiter collision-unambiguous, no spoof/pin vector within the trust model (base fixed to origin/main, fetch-depth 0, trusted base-copy execution), criss-cross merge-bases resolve identically or fail closed. Pathspec exclusion boundary verified by experiment (docs/reviews-evil.txt and docs/Reviews NOT excluded); symlink swap of docs/reviews gains nothing (data-only path); .gitattributes binary tricks can't mask content (--full-index blob ids); Actions SHA-pinned, pull_request only, typed-integer interpolations. Documented residuals not worse than documented. No blocking findings.\n\nROUND 1 (head bd4b47a): S1 (low) tests job checkout left persist-credentials default-true while executing PR-controlled code via pytest — contradicted the process doc's no-persisted-credentials claim; token impact capped by contents: read. S2 (info) github.base_ref interpolated inline into a run: block — not exploitable under branches: [main] filter, hardened to env-var passing. S3 (info) pytest installed unpinned. Round-1 clean list: argv-list subprocess with option-injection guard, --pr type=int (no traversal), hardcoded leg filenames, trusted-base-copy correctly constructed with bootstrap fallback only reachable pre-gate, fail-closed malformed-artifact handling, SHA-pinned actions, no secrets. Assessment: threat model in the process doc honest and accurate; residuals exactly the real ones.\n\n--- Post-review delta note (orchestrator, attested at final head 28f1fdc) ---\nAfter the round-4 legs ran on ca27180, their own validated findings were fixed\nand committed as 28f1fdc: the vacuous submodule/non-empty-diff hash tests were\nrebuilt around a constant merge-base (mutation-verified: the submodule test\nfails when --ignore-submodules=none is removed), diff.indentHeuristic pinned,\nmerge-base failure diagnostic given an unrelated-histories fallback, docstring\nand rule-4 wording softened to name the require-up-to-date ruleset dependency,\ndoc pin list synced. 44/44 tests pass; git diff --check clean. The attested\nhash covers the fixed state. Second delta (49974df, attested hash updated):\nthe round-4 watch-item flake became a hard CI failure — porcelain `git add\n<submodule>` under ignore=all staged nothing on CI's git version. The test now\nstages the gitlink via update-index --cacheinfo (plumbing, immune to ignore\nconfig) and surfaces git stderr per the round-4 recommendation; mutation check\nre-verified (test fails without --ignore-submodules=none), 5x stable, 44/44.\nTest-infrastructure-only change; gate logic untouched. Battery history: round 1 (Claude legs) -> fixes;\ndelta verification caught a P1 the fixes introduced (orderFile crash) -> fixed;\nround 2/3 (codex legs + Claude re-review) found the submodule ignore=all hash\nbypass (high, reproduced) and the merge-base binding gap (high/P2, found\nindependently by both models) -> fixed; round 4 (all four legs) -> no new\nvalidated blocking findings: converged.",
+  "findings": [
+    {
+      "id": "R1-S1",
+      "summary": "tests job checkout persisted credentials while running PR-controlled code",
+      "severity_claimed": "low",
+      "validated": true,
+      "severity_validated": "low",
+      "disposition": "fixed",
+      "reason": "persist-credentials: false on both jobs; process doc claim now accurate."
+    },
+    {
+      "id": "R1-S2",
+      "summary": "github.base_ref interpolated inline into run: block",
+      "severity_claimed": "info",
+      "validated": true,
+      "severity_validated": "info",
+      "disposition": "fixed",
+      "reason": "Passed via env: BASE_REF per Actions hardening guidance."
+    },
+    {
+      "id": "R1-S3",
+      "summary": "pytest installed unpinned in CI",
+      "severity_claimed": "info",
+      "validated": true,
+      "severity_validated": "info",
+      "disposition": "fixed",
+      "reason": "Pinned pytest==9.1.1 (verified released >7 days)."
+    },
+    {
+      "id": "R4-S1",
+      "summary": "Merge-base binding inert without a branch update; docstring overstated standalone mechanism",
+      "severity_claimed": "info",
+      "validated": true,
+      "severity_validated": "info",
+      "disposition": "fixed",
+      "reason": "Docstring and rule 4 now name the require-up-to-date ruleset dependency, which the process doc already documented."
+    },
+    {
+      "id": "R4-S2",
+      "summary": "pytest transitive dependencies unpinned (pluggy/iniconfig/packaging)",
+      "severity_claimed": "info",
+      "validated": true,
+      "severity_validated": "info",
+      "disposition": "dismissed",
+      "reason": "Info-level; the tests job is hardened (contents: read, persist-credentials: false, no secrets) and is a separate runner from the stdlib-only gate job, so this cannot weaken enforcement. Full dependency pinning + 7-day release cooldown policy lands in wave 2 (engineering standards, agreed with Kristov 2026-07-21)."
+    },
+    {
+      "id": "R4-S3",
+      "summary": "Submodule regression test flaked once in seven full-suite runs (fails closed)",
+      "severity_claimed": "info",
+      "validated": false,
+      "severity_validated": "info",
+      "disposition": "dismissed",
+      "reason": "Not reproducible in isolation or on re-runs; direction is fail-closed (red check blocks, never admits). Recorded as a wave-report watch item; if it recurs, surface the git helper's stderr."
+    }
+  ]
+}

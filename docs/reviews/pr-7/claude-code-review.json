@@ -1,0 +1,27 @@
+{
+  "leg": "claude-code-review",
+  "model": "claude-fable-5",
+  "reviewed_diff_sha256": "64687e2af6f365f1165bef5bd6a4a0bc4fe47c35c3109594d178d2e84ebf9f35",
+  "reviewed_at": "2026-07-22",
+  "raw_output": "PR #7 correctness review (Claude, Fable 5, fresh-context, head 7a4c/branch fix/coverage-floor-precision).\n\nReproduced the root cause bit-for-bit with a 3-statement uncovered probe (198/201 = 98.51%): main config reports 99%, prints pytest-cov's FAIL message, exits 0; PR config reports 98.51%, exits 1. Mechanics confirmed in installed sources: coverage/results.py::should_fail_under returns round(total, precision) < fail_under; pytest-cov's exit path uses should_fail_under while its terminal message independently compares the raw value — explaining FAIL-with-exit-0. CI runs the identical invocation with no overriding config. precision affects only display formatting and the fail_under comparison; integer fail_under triggers no config warning. Clean tree: 58 passed, 100.00%, exit 0. Plan touch-set matches the diff.\n\nFindings: F1 (nit) \"±0.5-point blind spot\" loose — window was one-sided, (98.5, 99.0), and exactly 98.5 fails under round-half-even. F2 (nit) precision=2 narrows the window to 0.005 points ([98.995, 99.0) passes) rather than eliminating it; unreachable at current granularity; the rounding-free alternative is coverage's fail_under=100 special case, declined by documented policy. Overall: correct and minimal; no blocking findings.\n\n--- Post-review delta note (orchestrator, attested at final head 57bb1f2) ---\nSingle-round battery on 1c-file diff converged with zero blocking findings.\nPost-review commit 57bb1f2 applies the validated wording fixes: ADR 0005 now\nrecords the one-sidedness of the original blind spot, the residual\n[98.995, 99.0) rounding window at precision 2 (three-leg convergence), and\nthe declined rounding-free fail_under=100 alternative. Doc-only delta;\nverification: clean tree 58 tests / 100.00% / exit 0, breach case exits 1.",
+  "findings": [
+    {
+      "id": "F1",
+      "summary": "'±0.5-point blind spot' wording loose; window was one-sided",
+      "severity_claimed": "nit",
+      "validated": true,
+      "severity_validated": "nit",
+      "disposition": "fixed",
+      "reason": "ADR reworded to '0.5-point blind spot below the floor'."
+    },
+    {
+      "id": "F2",
+      "summary": "precision=2 narrows the rounding window to [98.995, 99.0) rather than eliminating it",
+      "severity_claimed": "nit",
+      "validated": true,
+      "severity_validated": "nit",
+      "disposition": "fixed",
+      "reason": "Residual window, current-size unreachability, and declined fail_under=100 alternative recorded in ADR 0005. Same substance as claude-sec S1 / codex-sec Z1."
+    }
+  ]
+}

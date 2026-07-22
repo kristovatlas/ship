@@ -1,0 +1,27 @@
+{
+  "leg": "claude-security-review",
+  "model": "claude-fable-5",
+  "reviewed_diff_sha256": "64687e2af6f365f1165bef5bd6a4a0bc4fe47c35c3109594d178d2e84ebf9f35",
+  "reviewed_at": "2026-07-22",
+  "raw_output": "PR #7 security review (Claude, Fable 5, fresh-context).\n\nFindings: S1 (info) residual rounding window at precision 2 — empirically pinned: 98.995 passes, 98.994 fails (coverage 7.15.2); 100x tightening, not elimination; suggested ADR note. S2 (info) the strengthened check's semantics live inside the unpinned coverage transitive (pytest-cov pinned, coverage floats) — a future or compromised coverage release could alter a required check's behavior with no diff in this repo; pre-existing floating-transitives residual, increased reliance noted.\n\nVerification: strict monotone tightening proven (precision-2 pass set is a strict subset of precision-0's; no total passes at 2 that failed at 0); config placement correct; no ConfigError path (integer fail_under); side effects limited to display + comparison; gate script unaffected (stdlib, never reads pyproject); docs-describe-what-is checks pass — the wave plan's escalation claim is a voluntary tightening beyond review-gate.md's letter (obligation overstatement, not enforcement overstatement; not a finding); nothing consumer-executable in the diff. No blocking findings.\n\n--- Post-review delta note (orchestrator, attested at final head 57bb1f2) ---\nSingle-round battery on 1c-file diff converged with zero blocking findings.\nPost-review commit 57bb1f2 applies the validated wording fixes: ADR 0005 now\nrecords the one-sidedness of the original blind spot, the residual\n[98.995, 99.0) rounding window at precision 2 (three-leg convergence), and\nthe declined rounding-free fail_under=100 alternative. Doc-only delta;\nverification: clean tree 58 tests / 100.00% / exit 0, breach case exits 1.",
+  "findings": [
+    {
+      "id": "S1",
+      "summary": "Residual rounding window at precision 2 (98.995 passes, 98.994 fails)",
+      "severity_claimed": "info",
+      "validated": true,
+      "severity_validated": "info",
+      "disposition": "fixed",
+      "reason": "Documented in ADR 0005 with the empirical boundary and re-derivation policy."
+    },
+    {
+      "id": "S2",
+      "summary": "Required check's semantics depend on the unpinned coverage transitive",
+      "severity_claimed": "info",
+      "validated": true,
+      "severity_validated": "info",
+      "disposition": "dismissed",
+      "reason": "Pre-existing accepted floating-transitives residual (ADR 0004, THREAT_MODEL threat 3); retirement is the already-queued wave-3 hash-pinning candidate, where this finding is additional motivation."
+    }
+  ]
+}

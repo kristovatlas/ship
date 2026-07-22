@@ -1,0 +1,63 @@
+{
+  "leg": "claude-security-review",
+  "model": "claude-fable-5",
+  "reviewed_diff_sha256": "5714d6ff8730ff9ae6916c72c074ad9c414189bb1dd5ae8608b247b9904f09d1",
+  "reviewed_at": "2026-07-22",
+  "raw_output": "PR #5 security review (Claude, Fable 5, independent fresh-context pass, lane-B range at dd565f3).\n\nFindings: S1 (low) Phase 5 report convention widens the sanctioned unreviewed-content channel beyond its own \"same as any delta note\" equivalence claim — report is unbounded planned prose no leg sees; delta-note mechanism undefined; nothing requires the committed copy to match the delivered message. Kept low: fully-malicious-orchestrator exploitation adds nothing over the artifact-genuineness residual; the report is by design human-read; the never-in-hash-exempt-path hardening is correct. S2 (low) THREAT_MODEL claims dev/CI jobs hold \"no secrets\"; gitleaks step has GITHUB_TOKEN in env, lychee receives github.token implicitly — internally inconsistent (the next sentence admits token exfiltration). S3 (low) tag-pinning claimed as a Threat-1 control; no tags exist (verified empty local and remote). S4 (low) ADR 0004 claims Socket heuristics; no in-repo evidence (grep: this ADR only). S5 (info) \"none of which execute downloaded code\" checkably false as worded — the gate job runs SHA-pinned actions/checkout and actions/setup-python; only the script is hermetic. S6 (info) the workflow/gate-script always-escalates rule is promoted to an unqualified \"control\" while enforcement is procedural (orchestrator adherence + review), with no CODEOWNERS or path-scoped mechanism.\n\nVerified sound: ALLOWED_MODELS matches ADR 0002; fail_under/branch matches ADR 0005; pins match ADR 0004 narrative; base-branch-copy claim matches ci.yml; escalation list unchanged; never-in-hash-exempt-path rule is genuine hardening. Overall: no critical/high; nothing weakens an enforced control or gives consumer agents dangerous instructions; the S2-S5 pattern is describing intended rather than shipped posture.\n\n--- Post-review delta note (orchestrator, attested at final head 83d6f55) ---\nThe four legs reviewed the lane-B range at dd565f3 (stacked on unmerged lane\nA). Single round, zero blocking findings. What changed after the legs ran:\n(1) fix batch 9cc8a41/1a1e99a closing every validated finding — docs\nrewritten from intended posture to shipped state (tags marked nonexistent\npending a release decision; advisory jobs labeled advisory; \"no secrets\"\ncorrected to the ephemeral read-only token; gate-job hermeticity narrowed to\nthe stdlib-only script + SHA-pinned first-party actions; Socket attributed to\nits GitHub App install; escalation rule labeled procedural), Phase 5\nequivalence claim replaced with an explicit wider-window concession + a\ncommitted-report-matches-delivered-message requirement, delta notes given a\ndefinition in the process doc, mutation-check precedent re-attributed to\nPR #1, Considered Options added to ADRs 0004/0005, wave-1 report blocking\ncount clarified; (2) rebase onto main after PR #4 merged (lane-B content\nunchanged; range diff now equals the main...HEAD diff this hash covers);\n(3) the wave-2 report committed per the Phase 5 option-C convention this PR\nitself introduces — the report matches the message delivered to Kristov.\nVerification on the final head: markdown-only diff (no code paths), all\nrelative links resolve, git diff --check clean, full test suite still 58\npassed with the 99 floor. Why no re-run: every change is finding-responsive\ndoc correction or the process records the convention prescribes; no code,\ngate, CI, or instruction-semantics change beyond the reviewed Phase 5 text\nwhose final wording implements the Claude security leg's own S1 remedy.",
+  "findings": [
+    {
+      "id": "S1",
+      "summary": "Phase 5 report convention wider than its delta-note equivalence claim; delta note undefined; no message-faithfulness requirement",
+      "severity_claimed": "low",
+      "validated": true,
+      "severity_validated": "low",
+      "disposition": "fixed",
+      "reason": "Equivalence claim removed — Phase 5 now concedes the wider window explicitly; committed report must match the delivered message (mismatch = artifact fabrication); delta notes defined in docs/process/review-gate.md (required content, bounds, when re-run is mandatory instead). Codex security judged the channel within the existing residual; the wording fixes stand on their own."
+    },
+    {
+      "id": "S2",
+      "summary": "'No secrets' claim false: scanner steps hold the ephemeral read-only token",
+      "severity_claimed": "low",
+      "validated": true,
+      "severity_validated": "low",
+      "disposition": "fixed",
+      "reason": "THREAT_MODEL reworded to the actual token posture; conclusion (cannot push/approve/merge) unchanged and correct."
+    },
+    {
+      "id": "S3",
+      "summary": "Tag-pinning claimed as a control; no tags exist",
+      "severity_claimed": "low",
+      "validated": true,
+      "severity_validated": "low",
+      "disposition": "fixed",
+      "reason": "Listed as planned/not-yet-operative in THREAT_MODEL; first cut escalated in the wave-2 report."
+    },
+    {
+      "id": "S4",
+      "summary": "Socket heuristics claimed without in-repo evidence",
+      "severity_claimed": "low",
+      "validated": true,
+      "severity_validated": "info",
+      "disposition": "fixed",
+      "reason": "Severity adjusted: the control exists (account-level GitHub App; check runs on every PR) — the defect was provenance documentation, now fixed in ADR 0004 and the standards table."
+    },
+    {
+      "id": "S5",
+      "summary": "'None of which execute downloaded code' overstates gate-job hermeticity",
+      "severity_claimed": "info",
+      "validated": true,
+      "severity_validated": "info",
+      "disposition": "fixed",
+      "reason": "Narrowed: the enforcement script is hermetic; the job runs SHA-pinned first-party actions (checkout, setup-python). Same fix applied to ADR 0004."
+    },
+    {
+      "id": "S6",
+      "summary": "Trust-boundary escalation presented as unqualified control; enforcement is procedural",
+      "severity_claimed": "info",
+      "validated": true,
+      "severity_validated": "info",
+      "disposition": "fixed",
+      "reason": "THREAT_MODEL now labels it a procedural control (orchestrator adherence + review, no mechanical implementation), pointing at threat 2's residuals."
+    }
+  ]
+}

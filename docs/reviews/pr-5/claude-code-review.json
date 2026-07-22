@@ -1,0 +1,63 @@
+{
+  "leg": "claude-code-review",
+  "model": "claude-fable-5",
+  "reviewed_diff_sha256": "5714d6ff8730ff9ae6916c72c074ad9c414189bb1dd5ae8608b247b9904f09d1",
+  "reviewed_at": "2026-07-22",
+  "raw_output": "PR #5 correctness review (Claude, Fable 5, independent fresh-context pass, lane-B range at dd565f3).\n\nVerified true against code and audit record: ADR 0001/0002 gate description matches scripts/review_gate.py exactly (hash construction, base-branch script copy, allowlist contents, vendor-crossover rejection); ADR 0005 coverage claims real (fail_under=99, branch=true; suite re-run: 58 passed, 100% branch); ruff cooldown-skip narrative matches requirements-dev.txt and PR #4 leg verification; wave-1 report's \"44 unit tests\" exact at f257821, \"~30 findings\" exactly 30, four-round narrative fully corroborated by docs/reviews/pr-1/; decisions.txt precedent matches ed4a9bf; v0.2.0 consistent; all relative links resolve; Phase 5 / review-gate Wave reports section / standards table / changelog agree on option C; lane-B diff is a subset of the plan's predicted touch-set.\n\nFindings: F1 (P2) ADR 0004 claims a Socket detection layer with no in-repo corroboration. F2 (P2) tag-based pinning presented as an existing control; zero tags exist (git tag -l and ls-remote both empty). F3 (P3) THREAT_MODEL \"no secrets\" contradicted by ci.yml's GITHUB_TOKEN in the gitleaks step and lychee's implicit token. F4 (P3) ADR 0005 misattributes the mutation-check precedent to PR #4; the recorded evidence is PR #1 rounds 3-4. F5 (nit) wave-1 report \"three blocking\" vs four validated blocking-severity records (fourth was bootstrap state, not a defect). F6 (nit) MADR structural deviations (0004/0005 no Considered Options; 0001 hoists Validation).\n\nOverall: documentation unusually well-grounded; the two P2s are the same failure mode the repo forbids itself — documenting a control that does not currently exist. Nothing blocking.\n\n--- Post-review delta note (orchestrator, attested at final head 83d6f55) ---\nThe four legs reviewed the lane-B range at dd565f3 (stacked on unmerged lane\nA). Single round, zero blocking findings. What changed after the legs ran:\n(1) fix batch 9cc8a41/1a1e99a closing every validated finding — docs\nrewritten from intended posture to shipped state (tags marked nonexistent\npending a release decision; advisory jobs labeled advisory; \"no secrets\"\ncorrected to the ephemeral read-only token; gate-job hermeticity narrowed to\nthe stdlib-only script + SHA-pinned first-party actions; Socket attributed to\nits GitHub App install; escalation rule labeled procedural), Phase 5\nequivalence claim replaced with an explicit wider-window concession + a\ncommitted-report-matches-delivered-message requirement, delta notes given a\ndefinition in the process doc, mutation-check precedent re-attributed to\nPR #1, Considered Options added to ADRs 0004/0005, wave-1 report blocking\ncount clarified; (2) rebase onto main after PR #4 merged (lane-B content\nunchanged; range diff now equals the main...HEAD diff this hash covers);\n(3) the wave-2 report committed per the Phase 5 option-C convention this PR\nitself introduces — the report matches the message delivered to Kristov.\nVerification on the final head: markdown-only diff (no code paths), all\nrelative links resolve, git diff --check clean, full test suite still 58\npassed with the 99 floor. Why no re-run: every change is finding-responsive\ndoc correction or the process records the convention prescribes; no code,\ngate, CI, or instruction-semantics change beyond the reviewed Phase 5 text\nwhose final wording implements the Claude security leg's own S1 remedy.",
+  "findings": [
+    {
+      "id": "F1",
+      "summary": "ADR 0004 claims a Socket detection layer with no in-repo corroboration",
+      "severity_claimed": "P2",
+      "validated": true,
+      "severity_validated": "P3",
+      "disposition": "fixed",
+      "reason": "Severity adjusted: the layer exists — Socket runs as an account-level GitHub App (its check runs appear on every PR: #1/#2/#4/#5), which in-repo grep cannot see. The doc gap was real; ADR now attributes the layer to the App install with the check-run evidence."
+    },
+    {
+      "id": "F2",
+      "summary": "Tag-based pinning presented as an existing control; zero tags exist",
+      "severity_claimed": "P2",
+      "validated": true,
+      "severity_validated": "P2",
+      "disposition": "fixed",
+      "reason": "ADR 0003, THREAT_MODEL, and standards table now state no tags exist; first cut (v0.2.0) escalated as a wave-2 report release decision."
+    },
+    {
+      "id": "F3",
+      "summary": "THREAT_MODEL 'no secrets' contradicted by the scanner steps' GITHUB_TOKEN",
+      "severity_claimed": "P3",
+      "validated": true,
+      "severity_validated": "P3",
+      "disposition": "fixed",
+      "reason": "Reworded: no repo-configured secrets; only the ephemeral read-only GITHUB_TOKEN (explicit in gitleaks, implicit in lychee)."
+    },
+    {
+      "id": "F4",
+      "summary": "Mutation-check precedent misattributed to PR #4; evidence is PR #1 rounds 3-4",
+      "severity_claimed": "P3",
+      "validated": true,
+      "severity_validated": "P3",
+      "disposition": "fixed",
+      "reason": "ADR 0005 re-attributed to PR #1, consistent with engineering-standards.md."
+    },
+    {
+      "id": "F5",
+      "summary": "Wave-1 report 'three blocking' vs four validated blocking-severity records",
+      "severity_claimed": "nit",
+      "validated": true,
+      "severity_validated": "nit",
+      "disposition": "fixed",
+      "reason": "Report now says three blocking defects and names the fourth record as expected bootstrap state."
+    },
+    {
+      "id": "F6",
+      "summary": "MADR structural deviations in ADRs 0001/0004/0005",
+      "severity_claimed": "nit",
+      "validated": true,
+      "severity_validated": "nit",
+      "disposition": "fixed",
+      "reason": "Considered Options added to 0004/0005; 0001's hoisted Validation section accepted as within MADR-minimal tolerance (noted by the leg itself)."
+    }
+  ]
+}

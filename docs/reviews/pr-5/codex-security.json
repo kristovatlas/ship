@@ -1,0 +1,27 @@
+{
+  "leg": "codex-security",
+  "model": "gpt-5.6-sol",
+  "reviewed_diff_sha256": "5714d6ff8730ff9ae6916c72c074ad9c414189bb1dd5ae8608b247b9904f09d1",
+  "reviewed_at": "2026-07-22",
+  "raw_output": "PR #5 security review (Codex CLI 0.145.0, gpt-5.6-sol, read-only sandbox, lane-B range at dd565f3).\n\nFindings: Z1 (low) ADR 0004 claims Socket dependency scanning; CI implements only pip-audit and the battery — a malicious dependency without a published CVE could pass while maintainers rely on the claimed heuristic layer. Z2 (low) threat model treats the enforcement job as hermetic (\"downloads nothing\") but it executes actions/checkout and actions/setup-python before the trusted gate; a malicious action revision accepted in a future workflow update could falsify the required check (constrained by full-SHA pins, read-only permissions, persist-credentials false, mandatory human review of workflow changes).\n\nOverall: Phase 5 does not create an additional channel beyond the documented delta-note residual (report added before attestation, inside the diff hash, prohibited from the hash-exempt directory). The consumer-versus-development boundary otherwise holds; remaining ADR and gate claims match the implementation.\n\n--- Post-review delta note (orchestrator, attested at final head 83d6f55) ---\nThe four legs reviewed the lane-B range at dd565f3 (stacked on unmerged lane\nA). Single round, zero blocking findings. What changed after the legs ran:\n(1) fix batch 9cc8a41/1a1e99a closing every validated finding — docs\nrewritten from intended posture to shipped state (tags marked nonexistent\npending a release decision; advisory jobs labeled advisory; \"no secrets\"\ncorrected to the ephemeral read-only token; gate-job hermeticity narrowed to\nthe stdlib-only script + SHA-pinned first-party actions; Socket attributed to\nits GitHub App install; escalation rule labeled procedural), Phase 5\nequivalence claim replaced with an explicit wider-window concession + a\ncommitted-report-matches-delivered-message requirement, delta notes given a\ndefinition in the process doc, mutation-check precedent re-attributed to\nPR #1, Considered Options added to ADRs 0004/0005, wave-1 report blocking\ncount clarified; (2) rebase onto main after PR #4 merged (lane-B content\nunchanged; range diff now equals the main...HEAD diff this hash covers);\n(3) the wave-2 report committed per the Phase 5 option-C convention this PR\nitself introduces — the report matches the message delivered to Kristov.\nVerification on the final head: markdown-only diff (no code paths), all\nrelative links resolve, git diff --check clean, full test suite still 58\npassed with the 99 floor. Why no re-run: every change is finding-responsive\ndoc correction or the process records the convention prescribes; no code,\ngate, CI, or instruction-semantics change beyond the reviewed Phase 5 text\nwhose final wording implements the Claude security leg's own S1 remedy.",
+  "findings": [
+    {
+      "id": "Z1",
+      "summary": "ADR claims Socket scanning not evidenced in-repo",
+      "severity_claimed": "low",
+      "validated": true,
+      "severity_validated": "info",
+      "disposition": "fixed",
+      "reason": "Severity adjusted as for Claude S4: the layer exists as an account-level GitHub App (check runs on every PR); ADR 0004 now records its actual provenance."
+    },
+    {
+      "id": "Z2",
+      "summary": "Enforcement job not hermetic: first-party actions execute before the gate script",
+      "severity_claimed": "low",
+      "validated": true,
+      "severity_validated": "low",
+      "disposition": "fixed",
+      "reason": "THREAT_MODEL and ADR 0004 narrowed to script-hermeticity + SHA-pinned first-party actions; the future-workflow-update path stays covered by the always-escalates rule (now labeled procedural)."
+    }
+  ]
+}

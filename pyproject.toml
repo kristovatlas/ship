@@ -35,3 +35,4 @@ exclude_also = ["if __name__ == .__main__.:"]
 # gap-closing tests); patch coverage on new code is reviewed by the
 # battery (docs/adr/0005, lane B).
 fail_under = 99
+precision = 2

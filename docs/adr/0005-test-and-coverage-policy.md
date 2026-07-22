@@ -10,9 +10,16 @@ The repo's code is small but load-bearing: the gate script is process
 infrastructure whose failure modes are "wrongful pass" (catastrophic) and
 "wrongful block" (annoying). What testing standard applies?
 
+## Considered options
+
+1. Battery-reviewed patch coverage + CI floor backstop (chosen).
+2. CI floor only (deterministic but blind to test quality).
+3. Battery review only (judges quality but silent regression possible).
+
 ## Decision outcome
 
-Google's coverage guidance (testing.googleblog.com, 2020-08), adapted:
+Option 1 — Google's coverage guidance (testing.googleblog.com, 2020-08),
+adapted:
 
 - **Patch coverage over aggregate worship**: what matters is that *new
   and changed* code is tested. The review battery's correctness legs are
@@ -27,8 +34,8 @@ Google's coverage guidance (testing.googleblog.com, 2020-08), adapted:
 - **Tests are code**: the gate's tests get the same battery review as
   the gate. Vacuous tests are treated as defects — precedent: PR #1
   round 4, where both models caught a regression test hollowed out by a
-  prior fix, and PR #4, where mutation checks (delete the pin, test must
-  fail) were used to prove test meaning.
+  prior fix, with mutation checks (delete the pin, the test must fail)
+  used in rounds 3–4 there to prove the rebuilt tests meant something.
 - **Behavioral tests over mocks**: real git repos in tmp dirs, real
   subprocess CLI invocations; in-process equivalents exist only where
   coverage measurement requires them, kept in sync with the subprocess

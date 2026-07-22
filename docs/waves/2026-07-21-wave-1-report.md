@@ -17,8 +17,10 @@ answers.
 
 ## 2. Conversations worth having
 
-- The battery earned its keep on its own gate: four rounds, ~30 findings,
-  three blocking — a P1 introduced by a round-1 fix (orderFile pin
+- The battery earned its keep on its own gate: four rounds, 30 findings,
+  three blocking defects (a fourth blocking-severity record, codex
+  R2-X1, was the expected bootstrap artifacts-missing state, not a
+  defect) — a P1 introduced by a round-1 fix (orderFile pin
   crashing the hash; caught by delta verification), a `.gitmodules
   ignore=all` submodule-pointer bypass of the staleness hash (high,
   codex, reproduced before fixing), and the hash not binding the

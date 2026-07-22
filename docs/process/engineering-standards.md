@@ -9,13 +9,14 @@ same PR (checked by the review battery).
 |---|---|---|
 | Deterministic review gate on every PR, no exemptions | `review-gate` required check (ruleset) | ADR 0001, `docs/process/review-gate.md` |
 | Review-model floor (Claude Opus 4.8/Fable 5+; Codex GPT 5.6 Sol+) | `ALLOWED_MODELS` in the gate | ADR 0002 |
-| Main-only trunk; versions cut as tags | ruleset + convention | ADR 0003 |
+| Main-only trunk; versions to be cut as tags (none exist yet — first cut pending, wave-2 report) | ruleset + convention | ADR 0003 |
 | Hermetic (stdlib-only) gate script | battery + human escalation on gate changes | ADR 0004 |
 | Exact dependency pins, ≥7-day release cooldown per pin | `requirements-dev.txt` review + battery | ADR 0004 |
 | New dependency = security escalation | ship escalation list | ADR 0004, SKILL.md |
-| Secret scanning, CVE audit, link check | `security-hygiene` + `links` CI jobs | ADR 0004 |
-| Lint/format/types: ruff + mypy strict | `lint-type` CI job | `pyproject.toml` |
-| Branch-coverage floor (fail_under just below measured; never lowered to pass a PR) | `tests` CI job | ADR 0005 |
+| Secret scanning, CVE audit, link check | `security-hygiene` + `links` CI jobs (advisory: not yet required checks — promotion pending, wave-2 report) | ADR 0004 |
+| Dependency heuristics | Socket GitHub App (account-level install; check runs on every PR) | ADR 0004 |
+| Lint/format/types: ruff + mypy strict | `lint-type` CI job (advisory: not yet a required check — promotion pending, wave-2 report) | `pyproject.toml` |
+| Branch-coverage floor (fail_under just below measured; never lowered to pass a PR) | `tests` CI job (required check) | ADR 0005 |
 | Patch coverage + test quality on new code | battery correctness legs | ADR 0005 |
 | Threat-model impact assessed per PR; doc updated in-PR when real | battery security legs + PR note | `docs/THREAT_MODEL.md` |
 | Wave plans with predicted touch-sets; overflow recorded | orchestrator + battery | SKILL.md Phase 2/3 |

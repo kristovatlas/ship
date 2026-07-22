@@ -55,8 +55,8 @@ that gate before merging.
 
 ## Engineering standards
 
-This repo eats its own cooking: every PR — docs included — passes the
-review battery through the gate. The standards and their enforcement are
+This repo eats its own cooking: every merged PR — docs included — passes
+the review battery through the gate. The standards and their enforcement are
 recorded in
 [`docs/process/engineering-standards.md`](docs/process/engineering-standards.md),
 decisions in [`docs/adr/`](docs/adr/), and the threat model in

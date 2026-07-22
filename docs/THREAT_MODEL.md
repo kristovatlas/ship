@@ -29,11 +29,15 @@ subtle instruction change on `main` — a weakened escalation list, an
 exfiltration step in the wave protocol, a relaxed dependency rule — and
 every consumer pulls it.
 
-**Controls:** the full battery + gate on *every* PR including docs-only
-(a docs carve-out here would be the vulnerability); diff-hash staleness
+**Controls:** the full battery + gate on every merged PR including
+docs-only (a docs carve-out here would be the vulnerability; unattested
+PRs exist only as hard-blocked probes, e.g. #2); diff-hash staleness
 binding with merge-base binding; human escalation on the gate's own
-trust boundary; account security of the sole maintainer (2FA); tags for
-consumers who prefer pinning to tracking `main`.
+trust boundary (a *procedural* control — orchestrator adherence plus
+review, no mechanical implementation; see threat 2's residuals); account
+security of the sole maintainer (2FA). Planned, not yet operative: tag
+pinning for consumers (no tags exist yet; first cut is a wave-2 release
+decision).
 
 **Residuals:** artifact genuineness (the gate proves judging happened,
 not that it was honest — `docs/process/review-gate.md`); a compromised
@@ -56,13 +60,17 @@ verification; package transitives float past the 7-day cooldown
 (ADR 0004). A compromised scanner or transitive executes in CI.
 
 **Why this does not reach consumers:** those jobs are `contents: read`
-with `persist-credentials: false` and no secrets. A compromised binary
-can lie in its report, fail the job, or exfiltrate a short-lived
-read-only token (repo confidentiality) — it cannot push, approve, or
-merge. The consumer-integrity path (threat 1) runs exclusively through
-the hermetic gate job, the ruleset, and human escalation — none of which
-execute downloaded code. The cost of a lying scanner is degraded
-*assurance* (asset 4): a missed secret or dead link, not modified code.
+with `persist-credentials: false`, holding no repo-configured secrets —
+only the ephemeral, read-only `GITHUB_TOKEN` (explicitly in the gitleaks
+step's env; implicitly via lychee-action's default). A compromised
+binary can lie in its report, fail the job, or exfiltrate that token
+(repo confidentiality for its lifetime) — it cannot push, approve, or
+merge. The consumer-integrity path (threat 1) runs through the gate job
+(whose enforcement script is stdlib-only and whose only executed
+non-script code is SHA-pinned first-party actions — checkout,
+setup-python), the ruleset, and human escalation. The cost of a lying
+scanner is degraded *assurance* (asset 4): a missed secret or dead link,
+not modified code.
 
 ## Out of scope
 

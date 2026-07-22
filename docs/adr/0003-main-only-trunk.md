@@ -28,8 +28,10 @@ nothing to promote.
 - Good: one gate configuration (`--base origin/main`), no release-PR
   variant, simpler mental model.
 - Bad: no staging area — anything merged is immediately what consumers
-  `git pull`. Compensated by the gate on every PR and by tagging: skill
-  versions are cut as tags (SKILL.md carries its version; consumers who
-  want stability pin a tag rather than tracking `main`).
+  `git pull`. Compensated by the gate on every merged PR and by the tag
+  convention: skill versions are to be cut as tags (SKILL.md carries its
+  version) so consumers can pin instead of tracking `main`. **No tags
+  exist yet** — the first (v0.2.0) is a release decision escalated in
+  the wave-2 report; until it lands, tracking `main` is the only option.
 - Revisit if: release cadence or multi-maintainer coordination ever makes
   a soak branch earn its ceremony.

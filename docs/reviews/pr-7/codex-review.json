@@ -1,0 +1,8 @@
+{
+  "leg": "codex-review",
+  "model": "gpt-5.6-sol",
+  "reviewed_diff_sha256": "64687e2af6f365f1165bef5bd6a4a0bc4fe47c35c3109594d178d2e84ebf9f35",
+  "reviewed_at": "2026-07-22",
+  "raw_output": "PR #7 correctness review (Codex CLI 0.145.0, gpt-5.6-sol, read-only sandbox).\n\nVerbatim: \"Findings: []. Overall assessment: No correctness defects found. Verified through: official coverage.py configuration documentation (report:precision); static inspection of installed coverage.py 7.15.2 and pytest-cov 7.1.0 source; read-only function probe: 98.51 passes at precision 0 and fails at precision 2; diff/touch-set and internal documentation cross-check. The ADR and plan accurately describe the rounding behavior and pytest-cov's raw-value FAIL message. The only ancillary effect is expected: coverage percentages are now displayed to two decimal places. No measurement or branch-coverage behavior changes. Full pytest execution was not attempted because the sandbox is read-only.\"\n\n--- Post-review delta note (orchestrator, attested at final head 57bb1f2) ---\nSingle-round battery on 1c-file diff converged with zero blocking findings.\nPost-review commit 57bb1f2 applies the validated wording fixes: ADR 0005 now\nrecords the one-sidedness of the original blind spot, the residual\n[98.995, 99.0) rounding window at precision 2 (three-leg convergence), and\nthe declined rounding-free fail_under=100 alternative. Doc-only delta;\nverification: clean tree 58 tests / 100.00% / exit 0, breach case exits 1.",
+  "findings": []
+}

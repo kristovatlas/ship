@@ -1,0 +1,18 @@
+{
+  "leg": "codex-security",
+  "model": "gpt-5.6-sol",
+  "reviewed_diff_sha256": "64687e2af6f365f1165bef5bd6a4a0bc4fe47c35c3109594d178d2e84ebf9f35",
+  "reviewed_at": "2026-07-22",
+  "raw_output": "PR #7 security review (Codex CLI 0.145.0, gpt-5.6-sol, read-only sandbox).\n\nVerbatim: \"Z1 (low): precision = 2 strengthens enforcement but does not make fail_under = 99 exact. coverage.py evaluates round(total, 2) < 99, so totals from approximately 98.995% through 98.999...% still pass. The ADR and plan overstate this as fully 'closed' and as making any breach fail; the blind spot is reduced from roughly 0.5 points to 0.005 points, not eliminated. Overall assessment: The change is monotonic and does not weaken existing coverage enforcement. It adds no dependency, code-execution path, privilege, or consumer-agent automation risk. Its only security-relevant side effect is stricter coverage gating and two-decimal report formatting; the remaining issue is documentation overstating the exactness of the 99% floor.\"\n\n--- Post-review delta note (orchestrator, attested at final head 57bb1f2) ---\nSingle-round battery on 1c-file diff converged with zero blocking findings.\nPost-review commit 57bb1f2 applies the validated wording fixes: ADR 0005 now\nrecords the one-sidedness of the original blind spot, the residual\n[98.995, 99.0) rounding window at precision 2 (three-leg convergence), and\nthe declined rounding-free fail_under=100 alternative. Doc-only delta;\nverification: clean tree 58 tests / 100.00% / exit 0, breach case exits 1.",
+  "findings": [
+    {
+      "id": "Z1",
+      "summary": "Docs claimed the blind spot 'closed'; rounding window remains at precision 2",
+      "severity_claimed": "low",
+      "validated": true,
+      "severity_validated": "low",
+      "disposition": "fixed",
+      "reason": "ADR 0005 now states the residual [98.995, 99.0) window explicitly; 'closed' scoped to the specific 0.5-point window PR #6 exposed."
+    }
+  ]
+}

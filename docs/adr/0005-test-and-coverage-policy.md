@@ -27,7 +27,17 @@ adapted:
   because a deterministic floor cannot judge test *quality*.
 - **A CI floor as the backstop**: `fail_under = 99` (branch coverage,
   `pyproject.toml`), set just under the measured value (100% after the
-  wave-2 gap-closing work) so silent regression trips CI. The floor
+  wave-2 gap-closing work) so silent regression trips CI. `precision = 2`
+  is load-bearing, not cosmetic: coverage.py compares `fail_under`
+  against the total rounded to the configured precision, so at the
+  default precision 0 a 98.51% run rounds to 99 and passes — a 0.5-point
+  blind spot below the floor, found by enforcement probe PR #6 and closed
+  2026-07-22. Rounding semantics remain at precision 2: totals in
+  [98.995, 99.0) would still pass — a 100x-smaller window, unreachable at
+  current code size (~0.5 points per coverage unit) and re-examined
+  whenever the floor is re-derived. (coverage.py's only rounding-free
+  comparison is the `fail_under = 100` special case, declined above by
+  policy.) The floor
   follows reality; it is re-derived when code grows, never lowered to
   make a PR pass (lowering it is a standards change → gated PR + ADR
   update).
